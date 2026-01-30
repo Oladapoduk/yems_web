@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
 import { Link } from 'react-router-dom';
 import { Loader2, CheckCircle, MapPin, Calendar, CreditCard, ChevronRight } from 'lucide-react';
-import { deliveryService, DeliveryZone, SlotsByDate } from '../services/deliveryService';
+import { deliveryService, type DeliveryZone, type SlotsByDate } from '../services/deliveryService';
 import { orderService } from '../services/orderService';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';

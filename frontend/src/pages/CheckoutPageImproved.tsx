@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle, Calendar, Clock } from 'lucide-react';
 import { deliveryService } from '../services/deliveryService';
 import { orderService } from '../services/orderService';
@@ -29,7 +29,6 @@ interface DeliverySlot {
 }
 
 function CheckoutForm() {
-    const navigate = useNavigate();
     const { items, getSubtotal, getDiscountAmount, getFinalTotal, appliedVoucher, clearCart } = useCartStore();
     const { user } = useAuthStore();
 
@@ -75,7 +74,7 @@ function CheckoutForm() {
         setError('');
         try {
             const result = await deliveryService.validatePostcode(shippingDetails.postcode);
-            if (result.isValid) {
+            if (result.isValid && result.zone) {
                 setDeliveryZone(result.zone);
                 setPostcodeValidated(true);
 
