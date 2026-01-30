@@ -26,11 +26,11 @@ const isTest = process.env.NODE_ENV === 'test' || !!process.env.VITEST;
 const PORT = isTest ? 0 : (process.env.PORT || 3000);
 
 // Middleware
-const allowedOrigins = [
+const allowedOrigins: string[] = [
     'http://localhost:5173',
     'http://localhost:5174',
     process.env.FRONTEND_URL
-].filter(Boolean);
+].filter((origin): origin is string => Boolean(origin));
 
 app.use(cors({
     origin: allowedOrigins,

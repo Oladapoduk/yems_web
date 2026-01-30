@@ -14,22 +14,10 @@ export const createVoucherSchema = z.object({
     .max(50, 'Code must be less than 50 characters')
     .regex(/^[A-Z0-9-_]+$/, 'Code can only contain uppercase letters, numbers, hyphens, and underscores'),
 
-  type: z.enum(['FIXED', 'PERCENTAGE'], {
-    required_error: 'Type is required',
-    invalid_type_error: 'Type must be either FIXED or PERCENTAGE'
-  }),
+  type: z.enum(['FIXED', 'PERCENTAGE']),
 
-  value: z.number({
-    required_error: 'Value is required',
-    invalid_type_error: 'Value must be a number'
-  })
-    .positive('Value must be positive')
-    .refine((val, ctx) => {
-      if (ctx.parent.type === 'PERCENTAGE' && val > 100) {
-        return false;
-      }
-      return true;
-    }, 'Percentage cannot exceed 100'),
+  value: z.number()
+    .positive('Value must be positive'),
 
   description: z.string().max(500, 'Description must be less than 500 characters').optional(),
 
@@ -47,6 +35,9 @@ export const createVoucherSchema = z.object({
 }).refine(
   data => new Date(data.validFrom) < new Date(data.validUntil),
   { message: 'validFrom must be before validUntil', path: ['validFrom'] }
+).refine(
+  data => !(data.type === 'PERCENTAGE' && data.value > 100),
+  { message: 'Percentage cannot exceed 100', path: ['value'] }
 );
 
 export const updateVoucherSchema = z.object({
@@ -56,13 +47,9 @@ export const updateVoucherSchema = z.object({
     .regex(/^[A-Z0-9-_]+$/, 'Code can only contain uppercase letters, numbers, hyphens, and underscores')
     .optional(),
 
-  type: z.enum(['FIXED', 'PERCENTAGE'], {
-    invalid_type_error: 'Type must be either FIXED or PERCENTAGE'
-  }).optional(),
+  type: z.enum(['FIXED', 'PERCENTAGE']).optional(),
 
-  value: z.number({
-    invalid_type_error: 'Value must be a number'
-  })
+  value: z.number()
     .positive('Value must be positive')
     .optional(),
 

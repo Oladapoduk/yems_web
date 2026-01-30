@@ -407,9 +407,9 @@ export class HubSpotService {
           city: deliveryAddress?.city,
           postcode: deliveryAddress?.postcode,
           userId: order.userId || undefined,
-          utmSource: hubspotContact?.utmSource || undefined,
-          utmMedium: hubspotContact?.utmMedium || undefined,
-          utmCampaign: hubspotContact?.utmCampaign || undefined
+          utmSource: hubspotContact?.utmSource ?? undefined,
+          utmMedium: hubspotContact?.utmMedium ?? undefined,
+          utmCampaign: hubspotContact?.utmCampaign ?? undefined
         });
       }
 

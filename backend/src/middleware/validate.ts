@@ -14,7 +14,7 @@ export const validateBody = (schema: ZodSchema) => {
             if (error instanceof ZodError) {
                 return res.status(400).json({
                     message: 'Validation failed',
-                    errors: error.errors.map(err => ({
+                    errors: error.issues.map((err) => ({
                         field: err.path.join('.'),
                         message: err.message
                     }))
@@ -34,13 +34,14 @@ export const validateBody = (schema: ZodSchema) => {
 export const validateParams = (schema: ZodSchema) => {
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
-            req.params = await schema.parseAsync(req.params);
+            const validated = await schema.parseAsync(req.params);
+            req.params = validated as typeof req.params;
             next();
         } catch (error) {
             if (error instanceof ZodError) {
                 return res.status(400).json({
                     message: 'Invalid URL parameters',
-                    errors: error.errors.map(err => ({
+                    errors: error.issues.map((err) => ({
                         field: err.path.join('.'),
                         message: err.message
                     }))
@@ -59,13 +60,14 @@ export const validateParams = (schema: ZodSchema) => {
 export const validateQuery = (schema: ZodSchema) => {
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
-            req.query = await schema.parseAsync(req.query);
+            const validated = await schema.parseAsync(req.query);
+            req.query = validated as typeof req.query;
             next();
         } catch (error) {
             if (error instanceof ZodError) {
                 return res.status(400).json({
                     message: 'Invalid query parameters',
-                    errors: error.errors.map(err => ({
+                    errors: error.issues.map((err) => ({
                         field: err.path.join('.'),
                         message: err.message
                     }))
