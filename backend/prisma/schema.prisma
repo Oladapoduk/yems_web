@@ -1,0 +1,363 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  firstName     String    @map("first_name")
+  lastName      String    @map("last_name")
+  phone         String?
+  role          UserRole  @default(CUSTOMER)
+  isVerified    Boolean   @default(false) @map("is_verified")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  businessProfile BusinessProfile?
+  orders          Order[]
+  addresses       Address[]
+  favorites       Favorite[]
+  cartItems       CartItem[]
+  voucherUsages   VoucherUsage[]
+  hubspotContact  HubSpotContact?
+
+  @@map("users")
+}
+
+enum UserRole {
+  CUSTOMER
+  BUSINESS
+  ADMIN
+}
+
+// Business Profile for B2B customers
+model BusinessProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique @map("user_id")
+  companyName         String   @map("company_name")
+  vatNumber           String?  @map("vat_number")
+  businessAddress     String   @map("business_address")
+  purchaseOrderPrefix String?  @map("purchase_order_prefix")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("business_profiles")
+}
+
+// Category model
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  imageUrl    String?   @map("image_url")
+  parentId    String?   @map("parent_id")
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  parent   Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryToCategory")
+  products Product[]
+
+  @@map("categories")
+}
+
+// Product model
+model Product {
+  id                  String      @id @default(uuid())
+  name                String
+  slug                String      @unique
+  description         String?
+  categoryId          String      @map("category_id")
+  price               Decimal     @db.Decimal(10, 2)
+  priceType           PriceType   @default(FIXED) @map("price_type")
+  weightMin           Decimal?    @map("weight_min") @db.Decimal(10, 2)
+  weightMax           Decimal?    @map("weight_max") @db.Decimal(10, 2)
+  stockQuantity       Int         @default(0) @map("stock_quantity")
+  isAvailable         Boolean     @default(true) @map("is_available")
+  allergens           String[]    // Array of allergen strings
+  nutritionalInfo     Json?       @map("nutritional_info")
+  storageInstructions String?     @map("storage_instructions")
+  imageUrls           String[]    @map("image_urls")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  category   Category     @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+  favorites  Favorite[]
+  cartItems  CartItem[]
+
+  @@map("products")
+}
+
+enum PriceType {
+  FIXED
+  PER_KG
+}
+
+// Delivery Zone model
+model DeliveryZone {
+  id               String   @id @default(uuid())
+  name             String
+  postcodePrefixes String[] @map("postcode_prefixes")
+  deliveryFee      Decimal  @map("delivery_fee") @db.Decimal(10, 2)
+  minimumOrder     Decimal  @map("minimum_order") @db.Decimal(10, 2)
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  orders Order[]
+
+  @@map("delivery_zones")
+}
+
+// Delivery Slot model
+model DeliverySlot {
+  id              String   @id @default(uuid())
+  date            DateTime @db.Date
+  startTime       String   @map("start_time")
+  endTime         String   @map("end_time")
+  maxOrders       Int      @map("max_orders")
+  currentBookings Int      @default(0) @map("current_bookings")
+  isAvailable     Boolean  @default(true) @map("is_available")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  orders Order[]
+
+  @@unique([date, startTime])
+  @@map("delivery_slots")
+}
+
+// Order model
+model Order {
+  id                 String        @id @default(uuid())
+  orderNumber        String        @unique @map("order_number")
+  userId             String?       @map("user_id")
+  guestEmail         String?       @map("guest_email")
+  status             OrderStatus   @default(PENDING)
+  subtotal           Decimal       @db.Decimal(10, 2)
+  voucherId          String?       @map("voucher_id")
+  discountAmount     Decimal       @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  finalSubtotal      Decimal?      @map("final_subtotal") @db.Decimal(10, 2)
+  deliveryFee        Decimal       @map("delivery_fee") @db.Decimal(10, 2)
+  total              Decimal       @db.Decimal(10, 2)
+  deliveryAddress    Json          @map("delivery_address")
+  deliveryPostcode   String        @map("delivery_postcode")
+  deliveryZoneId     String        @map("delivery_zone_id")
+  deliverySlotId     String        @map("delivery_slot_id")
+  paymentIntentId    String?       @map("payment_intent_id")
+  paymentStatus      PaymentStatus @default(PENDING) @map("payment_status")
+  isBusinessOrder    Boolean       @default(false) @map("is_business_order")
+  vatNumber          String?       @map("vat_number")
+  purchaseOrderNumber String?      @map("purchase_order_number")
+  notes              String?
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  user         User?        @relation(fields: [userId], references: [id])
+  deliveryZone DeliveryZone @relation(fields: [deliveryZoneId], references: [id])
+  deliverySlot DeliverySlot @relation(fields: [deliverySlotId], references: [id])
+  voucher      Voucher?     @relation(fields: [voucherId], references: [id])
+  orderItems   OrderItem[]
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PACKED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// Order Item model
+model OrderItem {
+  id                    String             @id @default(uuid())
+  orderId               String             @map("order_id")
+  productId             String             @map("product_id")
+  productName           String             @map("product_name")
+  productPrice          Decimal            @map("product_price") @db.Decimal(10, 2)
+  quantity              Int
+  actualWeight          Decimal?           @map("actual_weight") @db.Decimal(10, 2)
+  finalPrice            Decimal            @map("final_price") @db.Decimal(10, 2)
+  substitutionProductId String?            @map("substitution_product_id")
+  substitutionStatus    SubstitutionStatus @default(NONE) @map("substitution_status")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+enum SubstitutionStatus {
+  NONE
+  PENDING
+  ACCEPTED
+  REFUNDED
+}
+
+// Address model
+model Address {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  label        String
+  addressLine1 String   @map("address_line1")
+  addressLine2 String?  @map("address_line2")
+  city         String
+  postcode     String
+  isDefault    Boolean  @default(false) @map("is_default")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+// Favorite products
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  productId String   @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("favorites")
+}
+
+// Search Synonyms for better search
+model SearchSynonym {
+  id        String   @id @default(uuid())
+  term      String   @unique
+  synonyms  String[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("search_synonyms")
+}
+
+// Cart Items (server-side cart)
+model CartItem {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  sessionId String?  @map("session_id")
+  productId String   @map("product_id")
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user    User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@unique([sessionId, productId])
+  @@map("cart_items")
+}
+
+// Voucher/Coupon model
+model Voucher {
+  id              String        @id @default(uuid())
+  code            String        @unique
+  type            VoucherType   @map("type")
+  value           Decimal       @db.Decimal(10, 2)  // Amount for FIXED, percentage for PERCENTAGE
+  description     String?
+  minimumOrder    Decimal       @default(0) @map("minimum_order") @db.Decimal(10, 2)
+  maxUses         Int?          @map("max_uses")    // Total uses allowed (null = unlimited)
+  currentUses     Int           @default(0) @map("current_uses")
+  oneTimePerUser  Boolean       @default(true) @map("one_time_per_user")
+  validFrom       DateTime      @map("valid_from")
+  validUntil      DateTime      @map("valid_until")
+  isActive        Boolean       @default(true) @map("is_active")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  voucherUsages VoucherUsage[]
+  orders        Order[]
+
+  @@map("vouchers")
+}
+
+enum VoucherType {
+  FIXED        // Fixed amount (e.g., £10 off)
+  PERCENTAGE   // Percentage (e.g., 15% off)
+}
+
+// Voucher Usage tracking (audit trail)
+model VoucherUsage {
+  id         String   @id @default(uuid())
+  voucherId  String   @map("voucher_id")
+  userId     String?  @map("user_id")
+  guestEmail String?  @map("guest_email")
+  orderId    String?  @map("order_id")
+  usedAt     DateTime @default(now()) @map("used_at")
+
+  // Relations
+  voucher Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("voucher_usages")
+}
+
+// HubSpot tracking data
+model HubSpotContact {
+  id           String   @id @default(uuid())
+  userId       String?  @unique @map("user_id")
+  guestEmail   String?  @unique @map("guest_email")
+  hubspotId    String   @unique @map("hubspot_id")  // HubSpot contact ID
+  firstSeen    DateTime @default(now()) @map("first_seen")
+  lastSynced   DateTime @default(now()) @map("last_synced")
+  utmSource    String?  @map("utm_source")
+  utmMedium    String?  @map("utm_medium")
+  utmCampaign  String?  @map("utm_campaign")
+  utmTerm      String?  @map("utm_term")
+  utmContent   String?  @map("utm_content")
+  referrer     String?
+  landingPage  String?  @map("landing_page")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("hubspot_contacts")
+}

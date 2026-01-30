@@ -1,0 +1,335 @@
+I want to build a modern e-commerce website that allows customers to browse, search, and purchase the following categories:
+
+Frozen Fish
+Seafood
+Meat
+Groceries
+Packaged Foods
+Drinks
+Each category has:
+Product grid
+Product images
+Pricing
+Weight (e.g., 800-1200g)
+Availability (in stock / out of stock)
+
+Below is the PRD:
+1. Product Overview
+
+This product is a modern e-commerce website that allows customers to browse, search, and purchase frozen fish and grocery items online. The platform supports individual customers and small businesses (B2B buyers) with end-to-end order processing, delivery slot selection, and post-purchase notifications.
+
+The business sells products that require controlled handling (frozen seafood), so logistics, delivery rules, allergens, and compliance must be carefully built into the system.
+
+2. Goals & Objectives
+🎯 Primary Goals
+
+Enable customers to browse and buy frozen fish and groceries online.
+
+Provide a smooth, modern shopping experience.
+
+Ensure food-safe delivery, including time slots and zone restrictions.
+
+Support wholesale/B2B buyers with recurring orders and VAT documentation.
+
+📈 Business Goals
+
+Increase online sales and automate order processing.
+
+Expand customer reach beyond walk-in store traffic.
+
+Reduce manual ordering (WhatsApp/Phone) and streamline fulfillment.
+
+3. Target Users
+👤 User Group A: Everyday Shoppers
+
+Wants convenient access to frozen fish and groceries.
+
+Browses categories or uses search.
+
+Expects accurate delivery time, slot selection, and pricing.
+
+🧑‍💼 User Group B: Small Businesses (Restaurants, Takeaways)
+
+Need bulk purchasing.
+
+Require VAT invoices.
+
+Order the same items weekly → need fast reorders.
+
+Rely heavily on accurate delivery schedules.
+
+4. Functional Requirements
+4.1 Customer-Facing Features
+A. Homepage
+
+Hero banner with featured products.
+
+Clear categories (Frozen Fish, Meat, African Foods, Drinks, etc.).
+
+Search bar prominently displayed.
+
+B. Product Catalogue
+
+Display products with:
+
+Product name
+
+Product image
+
+Price
+
+Weight range or fixed weight
+
+Stock status
+
+Ability to filter by:
+
+Category
+
+Weight/Size
+
+Price
+
+Popularity
+
+C. Product Detail Page (PDP)
+
+Each product page must include:
+
+Product name + images
+
+Price (per kg or per item)
+
+Weight range (e.g., “800–1200g”)
+
+Quantity selector
+
+Add to Cart
+
+Allergen warnings
+
+Ingredients (if applicable)
+
+Nutritional information
+
+Delivery options
+
+Storage instructions (frozen)
+
+D. Shopping Cart
+
+Update quantity
+
+Remove item
+
+Display minimum order warning (if cart value < zone minimum)
+
+Delivery slot selection (required before checkout)
+
+Shows estimated delivery fee based on postcode
+
+E. Checkout
+
+Guest checkout or create account
+
+Postcode validation (only allows specific locations)
+
+Delivery time slot selection
+
+Payment via card
+
+Terms & Conditions checkbox
+
+Optional account creation
+
+B2B VAT number field (for businesses)
+
+F. User Accounts
+
+View past orders
+
+Download VAT invoices
+
+Re-order previous cart (“Order Again”)
+
+Update delivery addresses
+
+Save favorite products
+
+Edit business details (B2B users)
+
+G. 🔍 Search Functionality (NEW – Added From Your Recommendations)
+
+Predictive Search (Auto-complete):
+
+While typing, the search dropdown shows products (name + thumbnail).
+
+Synonym Management:
+
+Admin can map related terms (e.g.,
+
+“Prawns” ↔ “Shrimp”
+
+“Plantain” ↔ “Banana”
+
+“Mackerel” ↔ “Titus”
+)
+
+Search Results Page:
+
+Filterable results
+
+Sorting options
+
+No Results Page:
+
+Suggest categories
+
+Suggest top sellers
+
+H. 🛡 Compliance & Trust (NEW)
+
+Allergen warnings must be shown on the PDP
+
+Cookie consent banner (GDPR)
+
+Terms of Service checkbox at checkout (mandatory)
+
+Privacy Policy + Return Policy pages
+
+4.2 Backend / Admin Features
+I. Logistics Engine (NEW – Critical for Frozen Delivery)
+1. Postcode Validator
+
+Admin can set delivery zones (e.g., SE, DA, RM, BR postcodes)
+
+Cart cannot proceed if user’s address is outside valid zones
+
+2. Delivery Slot Manager
+
+Define time slots (e.g., 9–12, 12–3, 3–6)
+
+Limit number of orders per slot
+
+Prevent overbooking
+
+3. Minimum Order Threshold
+
+Different minimums per zone (e.g., Local £30, Outer £50)
+
+Checkout blocked until minimum is reached
+
+J. Product Management
+
+Admin can:
+
+Add/edit products
+
+Add weight ranges
+
+Add allergens, nutrition, storage instructions
+
+Set fixed price OR price per kg
+
+Upload images
+
+Enable/disable products
+
+K. Pricing & Weight Logic
+
+Question to resolve:
+
+If customer orders “1kg Snapper” but stock available is 1.2kg, pricing must use one of:
+
+Fixed Price Per Item (recommended)
+
+Customer pays same amount regardless of slight weight variation
+
+Price Per Kg (variable pricing)
+
+Customer is charged after actual weight is confirmed
+
+Requires “Adjust Final Price” workflow in admin
+
+The PRD must support either method.
+
+L. Order Management
+
+Admin dashboard includes:
+
+Order list
+
+Cancel / Refund
+
+Mark as “Out for Delivery”
+
+Mark as “Delivered”
+
+Replacement/Substitution workflow
+
+M. Substitution Logic
+
+If an item is out of stock:
+
+Admin marks substitution option
+
+Customer receives email:
+
+“Your exact item is unavailable. Would you like:
+A) Substitute product
+B) Refund for this item?”
+
+Customer must confirm before delivery is dispatched
+
+N. Transactional Emails (NEW)
+
+Order Confirmation
+
+Order Packed
+
+Out for Delivery (most important for frozen goods)
+
+Delivery Failed
+
+Substitution Alert
+
+Refund Processed
+
+O. B2B / Wholesale Features (NEW)
+
+VAT invoices automatically generated
+
+Business profile section
+
+“Weekly Re-order” button
+
+Bulk pricing rules
+
+Purchase order number field
+
+5. Non-Functional Requirements
+Performance
+
+Page load < 2 seconds
+
+Search autocomplete < 120ms
+
+Mobile-Optimized
+
+Full responsive layout
+
+Touch-friendly menus
+
+Security
+
+SSL everywhere
+
+Encrypted payment processing
+
+Secure admin access
+
+Scalability
+
+Able to support growth to 10,000 products
+
+Modular logistics engine

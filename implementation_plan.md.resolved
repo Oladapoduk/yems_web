@@ -1,0 +1,756 @@
+# E-Commerce Platform - Production Implementation Plan
+
+Modern full-stack e-commerce platform for frozen fish, seafood, meat, and groceries with real payment processing, database storage, and transactional emails.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Technology Stack - Production Ready**
+> 
+> **Frontend:**
+> - **React 18** with **Vite** for fast development and optimized builds
+> - **TypeScript** for type safety
+> - **React Router** for client-side routing
+> - **TanStack Query** (React Query) for server state management
+> - **Zustand** for client state management
+> - **Tailwind CSS** for styling (or vanilla CSS if preferred)
+> 
+> **Backend:**
+> - **Node.js** with **Express.js**
+> - **TypeScript** for type safety
+> - **Prisma ORM** for database access
+> - **PostgreSQL** for database (recommended for production)
+> - **JWT** for authentication
+> 
+> **Third-Party Services:**
+> - **Stripe** for payment processing
+> - **SendGrid** or **Resend** for transactional emails
+> - **AWS S3** or **Cloudinary** for image storage
+> 
+> This stack is production-ready, scalable, and widely supported.
+
+> [!WARNING]
+> **Required Accounts & API Keys**
+> 
+> You will need to create accounts and obtain API keys for:
+> 1. **Stripe** - Payment processing (free test mode available)
+> 2. **SendGrid/Resend** - Email service (free tier available)
+> 3. **AWS S3/Cloudinary** - Image storage (free tier available)
+> 4. **Database hosting** - PostgreSQL (can use local for development)
+> 
+> I'll guide you through setting these up during implementation.
+
+> [!IMPORTANT]
+> **Development Approach**
+> 
+> We'll build this in phases:
+> 1. **Phase 1**: Project setup, database schema, basic API
+> 2. **Phase 2**: Frontend core (homepage, products, cart)
+> 3. **Phase 3**: Authentication and user accounts
+> 4. **Phase 4**: Payment integration
+> 5. **Phase 5**: Email notifications
+> 6. **Phase 6**: Admin panel
+> 7. **Phase 7**: Advanced features (B2B, logistics)
+> 8. **Phase 8**: Testing and deployment
+
+## Database Schema
+
+### Users Table
+```sql
+- id (UUID, primary key)
+- email (unique)
+- password_hash
+- first_name
+- last_name
+- phone
+- role (enum: customer, business, admin)
+- is_verified
+- created_at
+- updated_at
+```
+
+### Business Profiles Table (for B2B users)
+```sql
+- id (UUID, primary key)
+- user_id (foreign key)
+- company_name
+- vat_number
+- business_address
+- purchase_order_prefix
+- created_at
+- updated_at
+```
+
+### Products Table
+```sql
+- id (UUID, primary key)
+- name
+- slug
+- description
+- category_id (foreign key)
+- price (decimal)
+- price_type (enum: fixed, per_kg)
+- weight_min (decimal, nullable)
+- weight_max (decimal, nullable)
+- stock_quantity
+- is_available
+- allergens (JSON array)
+- nutritional_info (JSON)
+- storage_instructions
+- image_urls (JSON array)
+- created_at
+- updated_at
+```
+
+### Categories Table
+```sql
+- id (UUID, primary key)
+- name
+- slug
+- description
+- image_url
+- parent_id (nullable, for subcategories)
+- sort_order
+```
+
+### Orders Table
+```sql
+- id (UUID, primary key)
+- order_number (unique)
+- user_id (foreign key, nullable for guest)
+- guest_email (nullable)
+- status (enum: pending, confirmed, packed, out_for_delivery, delivered, cancelled)
+- subtotal
+- delivery_fee
+- total
+- delivery_address (JSON)
+- delivery_postcode
+- delivery_zone_id (foreign key)
+- delivery_slot_id (foreign key)
+- payment_intent_id (Stripe)
+- payment_status (enum: pending, paid, refunded)
+- is_business_order
+- vat_number (nullable)
+- purchase_order_number (nullable)
+- notes
+- created_at
+- updated_at
+```
+
+### Order Items Table
+```sql
+- id (UUID, primary key)
+- order_id (foreign key)
+- product_id (foreign key)
+- product_name (snapshot)
+- product_price (snapshot)
+- quantity
+- actual_weight (nullable, for per_kg items)
+- final_price
+- substitution_product_id (nullable)
+- substitution_status (enum: none, pending, accepted, refunded)
+```
+
+### Delivery Zones Table
+```sql
+- id (UUID, primary key)
+- name
+- postcode_prefixes (JSON array, e.g., ["SE", "DA", "RM"])
+- delivery_fee
+- minimum_order
+- is_active
+```
+
+### Delivery Slots Table
+```sql
+- id (UUID, primary key)
+- date
+- start_time
+- end_time
+- max_orders
+- current_bookings
+- is_available
+```
+
+### Addresses Table
+```sql
+- id (UUID, primary key)
+- user_id (foreign key)
+- label (e.g., "Home", "Office")
+- address_line1
+- address_line2
+- city
+- postcode
+- is_default
+```
+
+### Search Synonyms Table
+```sql
+- id (UUID, primary key)
+- term
+- synonyms (JSON array)
+```
+
+---
+
+## API Architecture
+
+### Authentication Endpoints
+
+#### POST /api/auth/register
+Register new user
+```typescript
+Request: { email, password, firstName, lastName, phone, isBusiness? }
+Response: { user, token }
+```
+
+#### POST /api/auth/login
+User login
+```typescript
+Request: { email, password }
+Response: { user, token }
+```
+
+#### GET /api/auth/me
+Get current user (protected)
+```typescript
+Response: { user }
+```
+
+---
+
+### Product Endpoints
+
+#### GET /api/products
+Get products with filters
+```typescript
+Query params: { 
+  category?, 
+  search?, 
+  minPrice?, 
+  maxPrice?, 
+  inStock?, 
+  page?, 
+  limit?,
+  sort? 
+}
+Response: { products[], total, page, totalPages }
+```
+
+#### GET /api/products/:id
+Get single product
+```typescript
+Response: { product }
+```
+
+#### POST /api/admin/products (Admin only)
+Create product
+```typescript
+Request: { name, description, categoryId, price, ... }
+Response: { product }
+```
+
+#### PUT /api/admin/products/:id (Admin only)
+Update product
+
+#### DELETE /api/admin/products/:id (Admin only)
+Delete product
+
+---
+
+### Cart & Checkout Endpoints
+
+#### POST /api/cart/add
+Add item to cart (uses session or user ID)
+```typescript
+Request: { productId, quantity }
+Response: { cart }
+```
+
+#### GET /api/cart
+Get current cart
+
+#### PUT /api/cart/items/:itemId
+Update cart item quantity
+
+#### DELETE /api/cart/items/:itemId
+Remove from cart
+
+#### POST /api/checkout/validate-postcode
+Validate delivery postcode
+```typescript
+Request: { postcode }
+Response: { valid, zone, deliveryFee, minimumOrder }
+```
+
+#### GET /api/delivery-slots
+Get available delivery slots
+```typescript
+Query: { date?, postcodeZone? }
+Response: { slots[] }
+```
+
+#### POST /api/checkout/create-payment-intent
+Create Stripe payment intent
+```typescript
+Request: { cartId, deliverySlotId, deliveryAddress, ... }
+Response: { clientSecret, orderId }
+```
+
+#### POST /api/checkout/confirm
+Confirm order after payment
+```typescript
+Request: { orderId, paymentIntentId }
+Response: { order }
+```
+
+---
+
+### Order Endpoints
+
+#### GET /api/orders (Protected)
+Get user's orders
+```typescript
+Response: { orders[] }
+```
+
+#### GET /api/orders/:id (Protected)
+Get order details
+
+#### POST /api/orders/:id/reorder (Protected)
+Reorder previous order
+
+#### GET /api/admin/orders (Admin)
+Get all orders with filters
+
+#### PUT /api/admin/orders/:id/status (Admin)
+Update order status
+```typescript
+Request: { status }
+Response: { order }
+// Triggers email notification
+```
+
+#### POST /api/admin/orders/:id/substitute (Admin)
+Propose substitution
+```typescript
+Request: { orderItemId, substitutionProductId }
+Response: { order }
+// Sends email to customer
+```
+
+#### POST /api/orders/:id/substitution-response (Protected)
+Customer responds to substitution
+```typescript
+Request: { orderItemId, accept: boolean }
+Response: { order }
+```
+
+#### POST /api/admin/orders/:id/refund (Admin)
+Process refund
+
+---
+
+### User Account Endpoints
+
+#### GET /api/user/profile (Protected)
+Get user profile
+
+#### PUT /api/user/profile (Protected)
+Update profile
+
+#### GET /api/user/addresses (Protected)
+Get saved addresses
+
+#### POST /api/user/addresses (Protected)
+Add new address
+
+#### PUT /api/user/addresses/:id (Protected)
+Update address
+
+#### DELETE /api/user/addresses/:id (Protected)
+Delete address
+
+#### GET /api/user/favorites (Protected)
+Get favorite products
+
+#### POST /api/user/favorites (Protected)
+Add to favorites
+
+#### GET /api/user/invoices/:orderId (Protected, Business users)
+Download VAT invoice PDF
+
+---
+
+### Admin Endpoints
+
+#### GET /api/admin/dashboard/stats
+Get dashboard statistics
+```typescript
+Response: { 
+  totalOrders, 
+  totalRevenue, 
+  pendingOrders, 
+  lowStockProducts[] 
+}
+```
+
+#### GET /api/admin/delivery-zones
+Get all delivery zones
+
+#### POST /api/admin/delivery-zones
+Create delivery zone
+
+#### PUT /api/admin/delivery-zones/:id
+Update delivery zone
+
+#### GET /api/admin/delivery-slots
+Get delivery slot configuration
+
+#### POST /api/admin/delivery-slots
+Create delivery slots
+
+#### PUT /api/admin/delivery-slots/:id
+Update slot capacity
+
+#### GET /api/admin/search-synonyms
+Get synonym mappings
+
+#### POST /api/admin/search-synonyms
+Add synonym mapping
+
+---
+
+## Payment Integration (Stripe)
+
+### Setup Steps
+1. Create Stripe account
+2. Install `stripe` npm package
+3. Set up webhook endpoint for payment events
+4. Implement payment flow
+
+### Payment Flow
+```mermaid
+sequenceDiagram
+    participant Customer
+    participant Frontend
+    participant Backend
+    participant Stripe
+    participant Database
+
+    Customer->>Frontend: Click "Place Order"
+    Frontend->>Backend: POST /api/checkout/create-payment-intent
+    Backend->>Database: Create order (status: pending)
+    Backend->>Stripe: Create payment intent
+    Stripe-->>Backend: Return client secret
+    Backend-->>Frontend: Return client secret + orderId
+    Frontend->>Stripe: Confirm payment (Stripe Elements)
+    Stripe-->>Frontend: Payment success
+    Frontend->>Backend: POST /api/checkout/confirm
+    Backend->>Database: Update order (status: confirmed)
+    Backend->>Email Service: Send confirmation email
+    Backend-->>Frontend: Order confirmed
+    Frontend-->>Customer: Show success page
+```
+
+### Webhook Handler
+```typescript
+POST /api/webhooks/stripe
+// Handle events:
+// - payment_intent.succeeded
+// - payment_intent.payment_failed
+// - charge.refunded
+```
+
+---
+
+## Email Service Integration
+
+### Email Provider Setup
+**Recommended: Resend or SendGrid**
+
+**Resend** (Modern, developer-friendly):
+- Free tier: 3,000 emails/month
+- Simple API
+- React Email templates support
+
+**SendGrid** (Established, reliable):
+- Free tier: 100 emails/day
+- More features
+- Template builder
+
+### Email Templates
+
+#### 1. Order Confirmation
+**Trigger:** Order status changes to "confirmed"
+```
+Subject: Order Confirmation #{{orderNumber}}
+Content:
+- Order details
+- Items list
+- Delivery slot
+- Total amount
+- Track order link
+```
+
+#### 2. Order Packed
+**Trigger:** Order status changes to "packed"
+```
+Subject: Your order is being prepared #{{orderNumber}}
+Content:
+- Items being packed
+- Expected delivery time
+- Preparation instructions
+```
+
+#### 3. Out for Delivery
+**Trigger:** Order status changes to "out_for_delivery"
+```
+Subject: Your order is on the way! #{{orderNumber}}
+Content:
+- Delivery time window
+- Driver contact (if available)
+- Delivery instructions
+- Important: Keep freezer space ready
+```
+
+#### 4. Delivered
+**Trigger:** Order status changes to "delivered"
+```
+Subject: Order delivered #{{orderNumber}}
+Content:
+- Confirmation of delivery
+- Storage instructions reminder
+- Feedback request
+- Reorder button
+```
+
+#### 5. Substitution Alert
+**Trigger:** Admin proposes substitution
+```
+Subject: Product substitution required #{{orderNumber}}
+Content:
+- Original item unavailable
+- Proposed substitute with image
+- Accept/Decline buttons
+- Refund option
+```
+
+#### 6. Refund Processed
+**Trigger:** Refund issued
+```
+Subject: Refund processed #{{orderNumber}}
+Content:
+- Refund amount
+- Reason
+- Expected timeline
+- Customer support contact
+```
+
+### Email Service Implementation
+```typescript
+// services/email.service.ts
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function sendOrderConfirmation(order: Order) {
+  await resend.emails.send({
+    from: 'orders@yourdomain.com',
+    to: order.email,
+    subject: `Order Confirmation #${order.orderNumber}`,
+    html: renderOrderConfirmationTemplate(order)
+  });
+}
+```
+
+---
+
+## File Upload & Storage
+
+### Image Storage Options
+
+**Option 1: Cloudinary** (Recommended)
+- Free tier: 25GB storage, 25GB bandwidth
+- Automatic image optimization
+- CDN included
+- Image transformations
+
+**Option 2: AWS S3**
+- More control
+- Lower cost at scale
+- Requires CloudFront for CDN
+
+### Upload Flow
+```typescript
+POST /api/admin/products/upload-image
+// Accepts multipart/form-data
+// Validates file type and size
+// Uploads to Cloudinary/S3
+// Returns image URL
+```
+
+---
+
+## Proposed Changes
+
+### Project Structure
+```
+Olayemi_website/
+├── frontend/                 # React application
+│   ├── src/
+│   │   ├── components/      # Reusable components
+│   │   ├── pages/           # Page components
+│   │   ├── hooks/           # Custom React hooks
+│   │   ├── services/        # API service layer
+│   │   ├── store/           # Zustand stores
+│   │   ├── utils/           # Utility functions
+│   │   ├── types/           # TypeScript types
+│   │   ├── assets/          # Images, fonts
+│   │   └── App.tsx
+│   ├── package.json
+│   └── vite.config.ts
+│
+├── backend/                  # Node.js API
+│   ├── src/
+│   │   ├── routes/          # API routes
+│   │   ├── controllers/     # Route handlers
+│   │   ├── services/        # Business logic
+│   │   ├── middleware/      # Auth, validation, etc.
+│   │   ├── utils/           # Helper functions
+│   │   ├── types/           # TypeScript types
+│   │   └── server.ts
+│   ├── prisma/
+│   │   ├── schema.prisma    # Database schema
+│   │   └── migrations/
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── shared/                   # Shared types between frontend/backend
+│   └── types/
+│
+└── README.md
+```
+
+---
+
+## Frontend Components
+
+### Core Components
+- `Header` - Navigation, search, cart icon
+- `Footer` - Links, contact info
+- `ProductCard` - Product display with image, price, add to cart
+- `CategoryCard` - Category navigation
+- `SearchBar` - Autocomplete search
+- `Cart` - Shopping cart sidebar
+- `DeliverySlotPicker` - Slot selection calendar
+- `PostcodeValidator` - Postcode input with validation
+- `PaymentForm` - Stripe Elements integration
+- `OrderSummary` - Order details display
+- `InvoiceDownload` - PDF invoice generator (B2B)
+
+### Pages - Customer
+- `HomePage` - Hero, categories, featured products
+- `ProductsPage` - Product grid with filters
+- `ProductDetailPage` - Single product view
+- `CartPage` - Cart review
+- `CheckoutPage` - Checkout flow
+- `OrderConfirmationPage` - Success page
+- `AccountPage` - User dashboard
+- `OrderHistoryPage` - Past orders
+- `OrderDetailPage` - Single order view
+- `LoginPage` - Authentication
+- `RegisterPage` - Sign up
+
+### Pages - Admin
+- `AdminDashboard` - Overview stats
+- `AdminProducts` - Product CRUD
+- `AdminOrders` - Order management
+- `AdminDeliveryZones` - Zone configuration
+- `AdminDeliverySlots` - Slot management
+- `AdminCustomers` - Customer list
+
+---
+
+## Verification Plan
+
+### Phase 1: Database & API Testing
+1. Set up PostgreSQL locally
+2. Run Prisma migrations
+3. Seed test data
+4. Test all API endpoints with Postman/Thunder Client
+5. Verify authentication flow
+
+### Phase 2: Payment Integration Testing
+1. Set up Stripe test mode
+2. Test payment intent creation
+3. Test successful payment flow
+4. Test failed payment handling
+5. Test refund processing
+6. Verify webhook handling
+
+### Phase 3: Email Testing
+1. Set up email service in test mode
+2. Test all email templates
+3. Verify email delivery
+4. Test substitution workflow emails
+5. Check email formatting on mobile
+
+### Phase 4: Frontend Testing
+1. Test responsive design (mobile, tablet, desktop)
+2. Test all user flows end-to-end
+3. Test form validations
+4. Test error handling
+5. Test loading states
+6. Performance testing (Lighthouse)
+
+### Phase 5: Integration Testing
+1. Complete customer journey: Browse → Add to cart → Checkout → Payment → Confirmation
+2. B2B flow: Register as business → Place order → Download invoice
+3. Admin flow: Create product → Process order → Update status → Send emails
+4. Substitution flow: Propose substitute → Customer accepts/declines
+5. Postcode validation across different zones
+
+### Phase 6: Production Deployment
+1. Deploy database (Railway/Supabase/AWS RDS)
+2. Deploy backend (Railway/Render/AWS)
+3. Deploy frontend (Vercel/Netlify)
+4. Configure environment variables
+5. Set up domain and SSL
+6. Test production environment
+7. Monitor error logs
+
+---
+
+## Environment Variables
+
+### Frontend (.env)
+```
+VITE_API_URL=http://localhost:3000/api
+VITE_STRIPE_PUBLIC_KEY=pk_test_...
+```
+
+### Backend (.env)
+```
+DATABASE_URL=postgresql://...
+JWT_SECRET=...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+RESEND_API_KEY=re_...
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+FRONTEND_URL=http://localhost:5173
+NODE_ENV=development
+```
+
+---
+
+## Next Steps
+
+1. **Confirm technology stack** - Are you happy with React + Node.js + PostgreSQL?
+2. **Third-party services** - Which email provider do you prefer (Resend or SendGrid)?
+3. **Image storage** - Cloudinary or AWS S3?
+4. **Start implementation** - I'll begin with project setup and database schema
+
+Let me know if you'd like any changes to this plan!

@@ -1,0 +1,16 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "description": "Utility scripts for Olayemi Foods",
+  "main": "index.js",
+  "scripts": {
+    "create-admin": "node createAdmin.js",
+    "bulk-upload": "node bulkUploadProducts.js",
+    "check-duplicates": "node checkDuplicates.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "bcryptjs": "^2.4.3",
+    "form-data": "^4.0.1"
+  }
+}

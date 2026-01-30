@@ -1,0 +1,155 @@
+import { Router, Request, Response } from 'express';
+import prisma from '../prisma';
+
+const router = Router();
+
+// Get available delivery slots for a date range
+router.get('/', async (req: Request, res: Response) => {
+    try {
+        const { startDate, endDate } = req.query;
+
+        if (!startDate) {
+            return res.status(400).json({ message: 'Start date is required' });
+        }
+
+        const slots = await prisma.deliverySlot.findMany({
+            where: {
+                isAvailable: true,
+                date: {
+                    gte: new Date(startDate as string),
+                    ...(endDate && { lte: new Date(endDate as string) })
+                },
+                currentBookings: {
+                    lt: prisma.deliverySlot.fields.maxOrders
+                }
+            },
+            orderBy: [
+                { date: 'asc' },
+                { startTime: 'asc' }
+            ]
+        });
+
+        // Group by date
+        const slotsByDate = slots.reduce((acc, slot) => {
+            const dateKey = slot.date.toISOString().split('T')[0];
+            if (!acc[dateKey]) {
+                acc[dateKey] = [];
+            }
+            acc[dateKey].push({
+                id: slot.id,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                available: slot.maxOrders - slot.currentBookings,
+                maxOrders: slot.maxOrders
+            });
+            return acc;
+        }, {} as Record<string, any[]>);
+
+        res.json(slotsByDate);
+    } catch (error) {
+        console.error('Error fetching delivery slots:', error);
+        res.status(500).json({ message: 'Failed to fetch delivery slots' });
+    }
+});
+
+// Get specific slot details
+router.get('/:id', async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        const slot = await prisma.deliverySlot.findUnique({
+            where: { id }
+        });
+
+        if (!slot) {
+            return res.status(404).json({ message: 'Delivery slot not found' });
+        }
+
+        res.json(slot);
+    } catch (error) {
+        console.error('Error fetching delivery slot:', error);
+        res.status(500).json({ message: 'Failed to fetch delivery slot' });
+    }
+});
+
+// Admin: Create delivery slot
+router.post('/admin', async (req: Request, res: Response) => {
+    try {
+        const { date, startTime, endTime, maxOrders } = req.body;
+
+        const slot = await prisma.deliverySlot.create({
+            data: {
+                date: new Date(date),
+                startTime,
+                endTime,
+                maxOrders
+            }
+        });
+
+        res.status(201).json(slot);
+    } catch (error) {
+        console.error('Error creating delivery slot:', error);
+        res.status(500).json({ message: 'Failed to create delivery slot' });
+    }
+});
+
+// Admin: Create bulk delivery slots
+router.post('/admin/bulk', async (req: Request, res: Response) => {
+    try {
+        const { startDate, endDate, timeSlots } = req.body;
+        // timeSlots: [{ startTime: "09:00", endTime: "12:00", maxOrders: 20 }]
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const slots = [];
+
+        for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+            for (const timeSlot of timeSlots) {
+                slots.push({
+                    date: new Date(date),
+                    startTime: timeSlot.startTime,
+                    endTime: timeSlot.endTime,
+                    maxOrders: timeSlot.maxOrders
+                });
+            }
+        }
+
+        const created = await prisma.deliverySlot.createMany({
+            data: slots,
+            skipDuplicates: true
+        });
+
+        res.status(201).json({
+            message: 'Delivery slots created successfully',
+            count: created.count
+        });
+    } catch (error) {
+        console.error('Error creating bulk delivery slots:', error);
+        res.status(500).json({ message: 'Failed to create delivery slots' });
+    }
+});
+
+// Admin: Update delivery slot
+router.put('/admin/:id', async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { startTime, endTime, maxOrders, isAvailable } = req.body;
+
+        const slot = await prisma.deliverySlot.update({
+            where: { id },
+            data: {
+                startTime,
+                endTime,
+                maxOrders,
+                isAvailable
+            }
+        });
+
+        res.json(slot);
+    } catch (error) {
+        console.error('Error updating delivery slot:', error);
+        res.status(500).json({ message: 'Failed to update delivery slot' });
+    }
+});
+
+export default router;
