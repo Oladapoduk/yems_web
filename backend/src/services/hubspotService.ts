@@ -394,7 +394,7 @@ export class HubSpotService {
           : { guestEmail: order.guestEmail || undefined }
       });
 
-      let contactId = hubspotContact?.hubspotId;
+      let contactId: string | null | undefined = hubspotContact?.hubspotId;
 
       // If no contact exists, create one
       if (!contactId) {
