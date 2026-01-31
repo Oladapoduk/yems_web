@@ -116,7 +116,7 @@ export default function AdminDeliveryZones() {
         }
 
         try {
-            await api.delete(`/delivery-zones/${zoneId}`);
+            await api.delete(`/delivery-zones/admin/${zoneId}`);
             await fetchZones();
         } catch (error) {
             console.error('Failed to delete zone:', error);

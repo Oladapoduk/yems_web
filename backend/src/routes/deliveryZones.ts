@@ -111,4 +111,20 @@ router.put('/admin/:id', authenticate, requireAdmin, async (req: Request, res: R
     }
 });
 
+// Admin: Delete delivery zone
+router.delete('/admin/:id', authenticate, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        await prisma.deliveryZone.delete({
+            where: { id }
+        });
+
+        res.json({ message: 'Delivery zone deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting delivery zone:', error);
+        res.status(500).json({ message: 'Failed to delete delivery zone' });
+    }
+});
+
 export default router;
