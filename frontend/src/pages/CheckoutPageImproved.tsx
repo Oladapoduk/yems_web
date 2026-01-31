@@ -75,12 +75,18 @@ function CheckoutForm() {
         try {
             const result = await deliveryService.validatePostcode(shippingDetails.postcode);
             if (result.isValid && result.zone) {
-                setDeliveryZone(result.zone);
+                // Ensure numeric values
+                const zone = {
+                    ...result.zone,
+                    deliveryFee: Number(result.zone.deliveryFee),
+                    minimumOrder: Number(result.zone.minimumOrder)
+                };
+                setDeliveryZone(zone);
                 setPostcodeValidated(true);
 
                 // Check minimum order
-                if (subtotal < result.zone.minimumOrder) {
-                    setError(`Minimum order for your area is £${result.zone.minimumOrder.toFixed(2)}`);
+                if (subtotal < zone.minimumOrder) {
+                    setError(`Minimum order for your area is £${zone.minimumOrder.toFixed(2)}`);
                 }
             }
         } catch (err: any) {
