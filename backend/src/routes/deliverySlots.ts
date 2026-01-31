@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../prisma';
+import { authenticate, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -73,7 +74,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // Admin: Create delivery slot
-router.post('/admin', async (req: Request, res: Response) => {
+router.post('/admin', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
         const { date, startTime, endTime, maxOrders } = req.body;
 
@@ -94,7 +95,7 @@ router.post('/admin', async (req: Request, res: Response) => {
 });
 
 // Admin: Create bulk delivery slots
-router.post('/admin/bulk', async (req: Request, res: Response) => {
+router.post('/admin/bulk', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
         const { startDate, endDate, timeSlots } = req.body;
         // timeSlots: [{ startTime: "09:00", endTime: "12:00", maxOrders: 20 }]
@@ -130,7 +131,7 @@ router.post('/admin/bulk', async (req: Request, res: Response) => {
 });
 
 // Admin: Update delivery slot
-router.put('/admin/:id', async (req: Request, res: Response) => {
+router.put('/admin/:id', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { startTime, endTime, maxOrders, isAvailable } = req.body;
@@ -143,6 +144,40 @@ router.put('/admin/:id', async (req: Request, res: Response) => {
                 maxOrders,
                 isAvailable
             }
+        });
+
+        res.json(slot);
+    } catch (error) {
+        console.error('Error updating delivery slot:', error);
+        res.status(500).json({ message: 'Failed to update delivery slot' });
+    }
+});
+
+// Admin: Delete delivery slot
+router.delete('/admin/:id', authenticate, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        await prisma.deliverySlot.delete({
+            where: { id }
+        });
+
+        res.json({ message: 'Delivery slot deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting delivery slot:', error);
+        res.status(500).json({ message: 'Failed to delete delivery slot' });
+    }
+});
+
+// Admin: Patch delivery slot (for toggling status)
+router.patch('/admin/:id', authenticate, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { isAvailable } = req.body;
+
+        const slot = await prisma.deliverySlot.update({
+            where: { id },
+            data: { isAvailable }
         });
 
         res.json(slot);

@@ -95,9 +95,9 @@ export default function AdminDeliverySlots() {
             };
 
             if (editingSlot) {
-                await api.put(`/delivery-slots/${editingSlot.id}`, data);
+                await api.put(`/delivery-slots/admin/${editingSlot.id}`, data);
             } else {
-                await api.post('/delivery-slots', data);
+                await api.post('/delivery-slots/admin', data);
             }
 
             await fetchSlots(selectedDate);
@@ -116,7 +116,7 @@ export default function AdminDeliverySlots() {
         }
 
         try {
-            await api.delete(`/delivery-slots/${slotId}`);
+            await api.delete(`/delivery-slots/admin/${slotId}`);
             await fetchSlots(selectedDate);
         } catch (error) {
             console.error('Failed to delete slot:', error);
@@ -126,7 +126,7 @@ export default function AdminDeliverySlots() {
 
     const toggleSlotStatus = async (slotId: string, currentStatus: boolean) => {
         try {
-            await api.patch(`/delivery-slots/${slotId}`, {
+            await api.patch(`/delivery-slots/admin/${slotId}`, {
                 isAvailable: !currentStatus
             });
             await fetchSlots(selectedDate);
@@ -144,34 +144,28 @@ export default function AdminDeliverySlots() {
         try {
             setSaving(true);
             const today = new Date();
-            const slotsToCreate = [];
 
-            // Create slots for next 7 days
-            for (let i = 1; i <= 7; i++) {
-                const date = new Date(today);
-                date.setDate(today.getDate() + i);
-                const dateStr = date.toISOString().split('T')[0];
+            // Calculate start and end dates
+            const startDate = new Date(today);
+            startDate.setDate(today.getDate() + 1);
 
-                // Standard time slots
-                const timeSlots = [
-                    { startTime: '09:00', endTime: '12:00' },
-                    { startTime: '12:00', endTime: '15:00' },
-                    { startTime: '15:00', endTime: '18:00' }
-                ];
+            const endDate = new Date(today);
+            endDate.setDate(today.getDate() + 7);
 
-                for (const slot of timeSlots) {
-                    slotsToCreate.push({
-                        date: dateStr,
-                        startTime: slot.startTime,
-                        endTime: slot.endTime,
-                        maxOrders: 10,
-                        isAvailable: true
-                    });
-                }
-            }
+            // Standard time slots
+            const timeSlots = [
+                { startTime: '09:00', endTime: '12:00', maxOrders: 10 },
+                { startTime: '12:00', endTime: '15:00', maxOrders: 10 },
+                { startTime: '15:00', endTime: '18:00', maxOrders: 10 }
+            ];
 
-            // Create all slots
-            await Promise.all(slotsToCreate.map(slot => api.post('/delivery-slots', slot)));
+            // Use the bulk endpoint
+            await api.post('/delivery-slots/admin/bulk', {
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
+                timeSlots
+            });
+
             await fetchSlots(selectedDate);
             alert('Bulk slots created successfully!');
         } catch (error: any) {
