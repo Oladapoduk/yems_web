@@ -95,9 +95,9 @@ export default function AdminDeliveryZones() {
             };
 
             if (editingZone) {
-                await api.put(`/delivery-zones/${editingZone.id}`, data);
+                await api.put(`/delivery-zones/admin/${editingZone.id}`, data);
             } else {
-                await api.post('/delivery-zones', data);
+                await api.post('/delivery-zones/admin', data);
             }
 
             await fetchZones();
