@@ -35,7 +35,7 @@ export default function AdminDeliveryZones() {
         try {
             setLoading(true);
             const response = await api.get('/delivery-zones');
-            setZones(response.data.zones || []);
+            setZones(response.data || []);
         } catch (error) {
             console.error('Failed to fetch delivery zones:', error);
         } finally {
