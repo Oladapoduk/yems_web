@@ -7,6 +7,7 @@ export default defineConfig({
   preview: {
     port: parseInt(process.env.PORT || '4173'),
     host: true,
+    allowedHosts: ['yemsweb-production.up.railway.app', 'localhost'],
   },
   build: {
     outDir: 'dist',
