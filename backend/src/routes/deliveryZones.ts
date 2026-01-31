@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../prisma';
+import { authenticate, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -66,7 +67,7 @@ router.post('/validate-postcode', async (req: Request, res: Response) => {
 });
 
 // Admin: Create delivery zone
-router.post('/admin', async (req: Request, res: Response) => {
+router.post('/admin', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
         const { name, postcodePrefixes, deliveryFee, minimumOrder } = req.body;
 
@@ -87,7 +88,7 @@ router.post('/admin', async (req: Request, res: Response) => {
 });
 
 // Admin: Update delivery zone
-router.put('/admin/:id', async (req: Request, res: Response) => {
+router.put('/admin/:id', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { name, postcodePrefixes, deliveryFee, minimumOrder, isActive } = req.body;
