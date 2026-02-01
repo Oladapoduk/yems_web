@@ -92,7 +92,7 @@ export default function CheckoutPage() {
             const orderData = {
                 userId: user?.id,
                 guestEmail: !user ? shippingDetails.email : undefined,
-                items: items.map(item => ({
+                orderItems: items.map(item => ({
                     productId: item.product.id,
                     quantity: item.quantity
                 })),
