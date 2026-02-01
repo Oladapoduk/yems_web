@@ -64,12 +64,12 @@ export default function Layout() {
                         </div>
 
                         <div>
-                            <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6">Explore Shop</h4>
+                            <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6">Company</h4>
                             <ul className="space-y-4 text-sm font-medium">
-                                <li><Link to="/products?category=frozen-fish" className="text-gray-500 hover:text-primary-600 transition-colors">Premium Frozen Fish</Link></li>
-                                <li><Link to="/products?category=seafood" className="text-gray-500 hover:text-primary-600 transition-colors">Smoked Seafood</Link></li>
-                                <li><Link to="/products?category=meat" className="text-gray-500 hover:text-primary-600 transition-colors">Fresh Meat Cuts</Link></li>
-                                <li><Link to="/products?category=groceries" className="text-gray-500 hover:text-primary-600 transition-colors">Kitchen Essentials</Link></li>
+                                <li><Link to="/info/about-tanti" className="text-gray-500 hover:text-primary-600 transition-colors">About Tanti Foods</Link></li>
+                                <li><Link to="/info/quality-sourcing" className="text-gray-500 hover:text-primary-600 transition-colors">Quality & Sourcing</Link></li>
+                                <li><Link to="/info/sustainability" className="text-gray-500 hover:text-primary-600 transition-colors">Sustainability</Link></li>
+                                <li><Link to="/info/community-impact" className="text-gray-500 hover:text-primary-600 transition-colors">Community & Impact</Link></li>
                             </ul>
                         </div>
 
