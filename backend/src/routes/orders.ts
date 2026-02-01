@@ -52,7 +52,7 @@ router.post('/', validateBody(createOrderSchema), async (req: Request, res: Resp
         const {
             userId,
             guestEmail,
-            items,
+            orderItems: items,
             deliveryAddress,
             deliveryPostcode,
             deliveryZoneId,

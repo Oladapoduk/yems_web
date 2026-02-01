@@ -160,14 +160,20 @@ export default function AdminDeliverySlots() {
             ];
 
             // Use the bulk endpoint
-            await api.post('/delivery-slots/admin/bulk', {
+            const response = await api.post('/delivery-slots/admin/bulk', {
                 startDate: startDate.toISOString().split('T')[0],
                 endDate: endDate.toISOString().split('T')[0],
                 timeSlots
             });
 
-            await fetchSlots(selectedDate);
-            alert('Bulk slots created successfully!');
+            // Set selected date to tomorrow to show created slots
+            const tomorrowDate = startDate.toISOString().split('T')[0];
+            setSelectedDate(tomorrowDate);
+
+            // Refresh the slots for the new date
+            await fetchSlots(tomorrowDate);
+
+            alert(`Successfully created ${response.data.count} delivery slots for the next 7 days!`);
         } catch (error: any) {
             console.error('Failed to create bulk slots:', error);
             alert(error.response?.data?.message || 'Failed to create bulk slots');
