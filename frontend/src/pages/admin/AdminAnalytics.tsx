@@ -73,35 +73,34 @@ export default function AdminAnalytics() {
         );
     }
 
-    const statCards = [
-        {
-            title: 'Total Revenue',
-            value: `£${data.totalRevenue.toFixed(2)}`,
-            change: data.revenueGrowth,
-            icon: DollarSign,
-            color: 'green'
-        },
-        {
-            title: 'Total Orders',
+    {
+        title: 'Total Revenue',
+            value: `£${(Number(data.totalRevenue) || 0).toFixed(2)}`,
+                change: data.revenueGrowth,
+                    icon: DollarSign,
+                        color: 'green'
+    },
+    {
+        title: 'Total Orders',
             value: data.totalOrders.toString(),
-            change: data.ordersGrowth,
-            icon: ShoppingCart,
-            color: 'blue'
-        },
-        {
-            title: 'Avg Order Value',
-            value: `£${data.averageOrderValue.toFixed(2)}`,
-            change: 0,
-            icon: TrendingUp,
-            color: 'purple'
-        },
-        {
-            title: 'Low Stock Items',
+                change: data.ordersGrowth,
+                    icon: ShoppingCart,
+                        color: 'blue'
+    },
+    {
+        title: 'Avg Order Value',
+            value: `£${(Number(data.averageOrderValue) || 0).toFixed(2)}`,
+                change: 0,
+                    icon: TrendingUp,
+                        color: 'purple'
+    },
+    {
+        title: 'Low Stock Items',
             value: data.lowStockProducts.length.toString(),
-            change: 0,
-            icon: AlertTriangle,
-            color: 'red'
-        }
+                change: 0,
+                    icon: AlertTriangle,
+                        color: 'red'
+    }
     ];
 
     return (
@@ -174,7 +173,7 @@ export default function AdminAnalytics() {
                                         <p className="font-medium text-gray-900">{product.productName}</p>
                                         <p className="text-sm text-gray-500">{product.totalSold} units sold</p>
                                     </div>
-                                    <p className="font-semibold text-green-600">£{product.revenue.toFixed(2)}</p>
+                                    <p className="font-semibold text-green-600">£{(Number(product.revenue) || 0).toFixed(2)}</p>
                                 </div>
                             ))
                         ) : (
@@ -252,7 +251,7 @@ export default function AdminAnalytics() {
                                     <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
                                         {order.status}
                                     </span>
-                                    <p className="font-semibold text-gray-900">£{order.total.toFixed(2)}</p>
+                                    <p className="font-semibold text-gray-900">£{(Number(order.total) || 0).toFixed(2)}</p>
                                 </div>
                             </div>
                         ))

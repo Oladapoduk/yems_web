@@ -142,7 +142,10 @@ router.get('/dashboard', authenticateToken, requireAdmin, async (req: Request, r
             ordersGrowth: Number(ordersGrowth.toFixed(1)),
             topProducts,
             lowStockProducts,
-            recentOrders,
+            recentOrders: recentOrders.map(order => ({
+                ...order,
+                total: Number(order.total)
+            })),
             ordersByStatus: statusCounts
         });
     } catch (error) {
