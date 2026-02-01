@@ -100,25 +100,36 @@ router.post('/admin/bulk', authenticate, requireAdmin, async (req: Request, res:
         const { startDate, endDate, timeSlots } = req.body;
         // timeSlots: [{ startTime: "09:00", endTime: "12:00", maxOrders: 20 }]
 
+        console.log('Creating bulk slots:', { startDate, endDate, timeSlots });
+
         const start = new Date(startDate);
         const end = new Date(endDate);
         const slots = [];
 
-        for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+        // Fix: Create new Date object for each iteration to avoid mutation
+        let currentDate = new Date(start);
+        while (currentDate <= end) {
             for (const timeSlot of timeSlots) {
                 slots.push({
-                    date: new Date(date),
+                    date: new Date(currentDate), // Create new Date object
                     startTime: timeSlot.startTime,
                     endTime: timeSlot.endTime,
                     maxOrders: timeSlot.maxOrders
                 });
             }
+            // Increment date
+            currentDate = new Date(currentDate);
+            currentDate.setDate(currentDate.getDate() + 1);
         }
+
+        console.log(`Prepared ${slots.length} slots to create`);
 
         const created = await prisma.deliverySlot.createMany({
             data: slots,
             skipDuplicates: true
         });
+
+        console.log(`Successfully created ${created.count} delivery slots`);
 
         res.status(201).json({
             message: 'Delivery slots created successfully',
@@ -126,7 +137,11 @@ router.post('/admin/bulk', authenticate, requireAdmin, async (req: Request, res:
         });
     } catch (error) {
         console.error('Error creating bulk delivery slots:', error);
-        res.status(500).json({ message: 'Failed to create delivery slots' });
+        console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+        res.status(500).json({ 
+            message: 'Failed to create delivery slots',
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
 });
 
