@@ -55,6 +55,10 @@ export const createOrderSchema = z.object({
 
     deliveryAddress: deliveryAddressSchema,
 
+    deliveryPostcode: z.string()
+        .regex(ukPostcodeRegex, 'Please enter a valid UK postcode')
+        .transform(val => val.replace(/\s/g, '').toUpperCase()),
+
     deliveryZoneId: z.string().uuid('Invalid delivery zone'),
 
     deliverySlotId: z.string().uuid('Invalid delivery slot'),
@@ -83,7 +87,7 @@ export const createOrderSchema = z.object({
     voucherCode: z.string()
         .min(3)
         .max(50)
-        .regex(/^[A-Z0-9-_]+$/)
+        .regex(/^[A-Z0-9-_]+/)
         .transform(val => val.toUpperCase())
         .optional()
         .nullable()

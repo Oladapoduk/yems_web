@@ -214,7 +214,12 @@ router.post('/', validateBody(createOrderSchema), async (req: Request, res: Resp
         });
     } catch (error) {
         console.error('Error creating order:', error);
-        res.status(500).json({ message: 'Failed to create order' });
+        console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+        console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+        res.status(500).json({
+            message: 'Failed to create order',
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
 });
 
