@@ -3,7 +3,7 @@ import api from './api';
 export interface CreateOrderData {
     userId?: string;
     guestEmail?: string;
-    items: Array<{
+    orderItems: Array<{
         productId: string;
         quantity: number;
     }>;
@@ -23,6 +23,7 @@ export interface CreateOrderData {
     vatNumber?: string;
     purchaseOrderNumber?: string;
     notes?: string;
+    voucherCode?: string;
 }
 
 export const orderService = {
