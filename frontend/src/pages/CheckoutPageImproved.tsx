@@ -169,7 +169,30 @@ function CheckoutForm() {
             setClientSecret(result.clientSecret);
             setOrderNumber(result.order.orderNumber);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to create order');
+            console.error('Order creation error:', err);
+            const data = err.response?.data;
+
+            let errorMessage = 'Failed to create order';
+
+            if (data) {
+                // Handle specific error message
+                if (data.message) {
+                    errorMessage = data.message;
+                }
+
+                // Handle detailed error from backend catch block
+                if (data.error) {
+                    errorMessage += `: ${data.error}`;
+                }
+
+                // Handle validation errors
+                if (data.errors && Array.isArray(data.errors)) {
+                    const validationMessages = data.errors.map((e: any) => `${e.field}: ${e.message}`).join(', ');
+                    errorMessage += ` (${validationMessages})`;
+                }
+            }
+
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -398,13 +421,12 @@ function CheckoutForm() {
                                                     type="button"
                                                     disabled={slot.available === 0}
                                                     onClick={() => setSelectedSlot({ date, slotId: slot.id })}
-                                                    className={`p-3 border rounded-lg text-left transition-colors ${
-                                                        selectedSlot?.slotId === slot.id
+                                                    className={`p-3 border rounded-lg text-left transition-colors ${selectedSlot?.slotId === slot.id
                                                             ? 'border-primary-600 bg-primary-50'
                                                             : slot.available === 0
-                                                            ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed'
-                                                            : 'border-gray-200 hover:border-primary-300'
-                                                    }`}
+                                                                ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed'
+                                                                : 'border-gray-200 hover:border-primary-300'
+                                                        }`}
                                                 >
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center">
