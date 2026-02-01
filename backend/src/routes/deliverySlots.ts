@@ -73,6 +73,49 @@ router.get('/:id', async (req: Request, res: Response) => {
     }
 });
 
+/**
+ * Admin: Get all slots for a specific date (flat list)
+ * Used by AdminDeliverySlots page
+ */
+router.get('/admin/list', authenticate, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { date } = req.query;
+
+        console.log('Admin fetching slots for date:', date);
+
+        if (!date) {
+            return res.status(400).json({ message: 'Date is required' });
+        }
+
+        // Use a date range for the specific day to avoid timezone issues
+        const targetDate = new Date(date as string);
+        const nextDay = new Date(targetDate);
+        nextDay.setDate(targetDate.getDate() + 1);
+
+        const slots = await prisma.deliverySlot.findMany({
+            where: {
+                date: {
+                    gte: targetDate,
+                    lt: nextDay
+                }
+            },
+            orderBy: {
+                startTime: 'asc'
+            }
+        });
+
+        console.log(`Found ${slots.length} slots for ${date}`);
+
+        res.json({ slots });
+    } catch (error) {
+        console.error('Error in /admin/list:', error);
+        res.status(500).json({
+            message: 'Failed to fetch admin delivery slots',
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+});
+
 // Admin: Create delivery slot
 router.post('/admin', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
@@ -138,7 +181,7 @@ router.post('/admin/bulk', authenticate, requireAdmin, async (req: Request, res:
     } catch (error) {
         console.error('Error creating bulk delivery slots:', error);
         console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
-        res.status(500).json({ 
+        res.status(500).json({
             message: 'Failed to create delivery slots',
             error: error instanceof Error ? error.message : 'Unknown error'
         });

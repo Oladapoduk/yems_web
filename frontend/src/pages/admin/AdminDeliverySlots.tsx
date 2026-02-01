@@ -39,12 +39,9 @@ export default function AdminDeliverySlots() {
     const fetchSlots = async (date?: string) => {
         try {
             setLoading(true);
-            const params = new URLSearchParams();
-            if (date) {
-                params.append('date', date);
-            }
-
-            const response = await api.get(`/delivery-slots?${params.toString()}`);
+            const response = await api.get('/delivery-slots/admin/list', {
+                params: { date }
+            });
             setSlots(response.data.slots || []);
         } catch (error) {
             console.error('Failed to fetch delivery slots:', error);
@@ -294,8 +291,8 @@ export default function AdminDeliverySlots() {
                                                 </span>
                                             </div>
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${slot.isAvailable
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-gray-100 text-gray-800'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-gray-100 text-gray-800'
                                                 }`}>
                                                 {slot.isAvailable ? 'Active' : 'Inactive'}
                                             </span>
@@ -305,10 +302,10 @@ export default function AdminDeliverySlots() {
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-gray-600">Bookings:</span>
                                                 <span className={`font-medium ${slot.currentBookings >= slot.maxOrders
-                                                        ? 'text-red-600'
-                                                        : slot.currentBookings > slot.maxOrders * 0.8
-                                                            ? 'text-yellow-600'
-                                                            : 'text-green-600'
+                                                    ? 'text-red-600'
+                                                    : slot.currentBookings > slot.maxOrders * 0.8
+                                                        ? 'text-yellow-600'
+                                                        : 'text-green-600'
                                                     }`}>
                                                     {slot.currentBookings} / {slot.maxOrders}
                                                 </span>
@@ -316,10 +313,10 @@ export default function AdminDeliverySlots() {
                                             <div className="w-full bg-gray-200 rounded-full h-2">
                                                 <div
                                                     className={`h-2 rounded-full ${slot.currentBookings >= slot.maxOrders
-                                                            ? 'bg-red-600'
-                                                            : slot.currentBookings > slot.maxOrders * 0.8
-                                                                ? 'bg-yellow-600'
-                                                                : 'bg-green-600'
+                                                        ? 'bg-red-600'
+                                                        : slot.currentBookings > slot.maxOrders * 0.8
+                                                            ? 'bg-yellow-600'
+                                                            : 'bg-green-600'
                                                         }`}
                                                     style={{
                                                         width: `${Math.min((slot.currentBookings / slot.maxOrders) * 100, 100)}%`
@@ -332,8 +329,8 @@ export default function AdminDeliverySlots() {
                                             <button
                                                 onClick={() => toggleSlotStatus(slot.id, slot.isAvailable)}
                                                 className={`flex-1 px-3 py-1.5 rounded text-xs font-medium ${slot.isAvailable
-                                                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
                                                     }`}
                                             >
                                                 {slot.isAvailable ? 'Deactivate' : 'Activate'}
