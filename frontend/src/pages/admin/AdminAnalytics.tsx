@@ -73,34 +73,35 @@ export default function AdminAnalytics() {
         );
     }
 
-    {
-        title: 'Total Revenue',
+    const statCards = [
+        {
+            title: 'Total Revenue',
             value: `£${(Number(data.totalRevenue) || 0).toFixed(2)}`,
-                change: data.revenueGrowth,
-                    icon: DollarSign,
-                        color: 'green'
-    },
-    {
-        title: 'Total Orders',
+            change: data.revenueGrowth,
+            icon: DollarSign,
+            color: 'green'
+        },
+        {
+            title: 'Total Orders',
             value: data.totalOrders.toString(),
-                change: data.ordersGrowth,
-                    icon: ShoppingCart,
-                        color: 'blue'
-    },
-    {
-        title: 'Avg Order Value',
+            change: data.ordersGrowth,
+            icon: ShoppingCart,
+            color: 'blue'
+        },
+        {
+            title: 'Avg Order Value',
             value: `£${(Number(data.averageOrderValue) || 0).toFixed(2)}`,
-                change: 0,
-                    icon: TrendingUp,
-                        color: 'purple'
-    },
-    {
-        title: 'Low Stock Items',
+            change: 0,
+            icon: TrendingUp,
+            color: 'purple'
+        },
+        {
+            title: 'Low Stock Items',
             value: data.lowStockProducts.length.toString(),
-                change: 0,
-                    icon: AlertTriangle,
-                        color: 'red'
-    }
+            change: 0,
+            icon: AlertTriangle,
+            color: 'red'
+        }
     ];
 
     return (
